@@ -46,26 +46,12 @@ async function provision(ctx) {
     cloudflareTunnelToken: ctx.cloudflareTunnelToken,
   });
 
-  const server = await withRetry(
-    () =>
-      hcloudRequest(ctx.hetznerToken, "/servers", {
-        method: "POST",
-        body: {
-          name: serverName,
-          server_type: ctx.hetznerServerType,
-          image: ctx.hetznerImage,
-          location: ctx.hetznerLocation,
-          user_data: cloudInit,
-          labels: {
-            purpose: "ephemeral-ci",
-            repo: sanitizeLabel(ctx.githubRepository),
-            run_id: String(ctx.githubRunId),
-          },
-          firewalls: [{ firewall: firewallId }],
-        },
-      }),
-    { retries: 3, delayMs: 4000, name: "create-server" },
-  );
+  const server = await createServerWithFallbackType({
+    ctx,
+    serverName,
+    firewallId,
+    cloudInit,
+  });
 
   const serverId = server.server.id;
   log("Waiting for server to be running", { serverId });
@@ -269,6 +255,47 @@ async function createFirewall(token, name) {
   return response.firewall.id;
 }
 
+async function createServerWithFallbackType({ ctx, serverName, firewallId, cloudInit }) {
+  const candidateTypes = unique([ctx.hetznerServerType, "cpx11"]);
+  let lastError;
+  for (const serverType of candidateTypes) {
+    try {
+      log("Attempting server create", { serverType });
+      return await withRetry(
+        () =>
+          hcloudRequest(ctx.hetznerToken, "/servers", {
+            method: "POST",
+            body: {
+              name: serverName,
+              server_type: serverType,
+              image: ctx.hetznerImage,
+              location: ctx.hetznerLocation,
+              user_data: cloudInit,
+              labels: {
+                purpose: "ephemeral-ci",
+                repo: sanitizeLabel(ctx.githubRepository),
+                run_id: String(ctx.githubRunId),
+              },
+              firewalls: [{ firewall: firewallId }],
+            },
+          }),
+        { retries: 3, delayMs: 4000, name: `create-server-${serverType}` },
+      );
+    } catch (error) {
+      lastError = error;
+      if (isDeprecatedServerTypeError(error.message)) {
+        log("Server type appears deprecated, trying next candidate", {
+          serverType,
+          error: error.message,
+        });
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError;
+}
+
 async function hcloudRequest(token, path, { method, body }) {
   const response = await fetch(`${HETZNER_API}${path}`, {
     method,
@@ -377,6 +404,15 @@ function printOutputs(state) {
 
 function sanitizeLabel(input) {
   return input.replace(/[^a-zA-Z0-9_.-]/g, "-").slice(0, 60);
+}
+
+function unique(values) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function isDeprecatedServerTypeError(message) {
+  const text = String(message).toLowerCase();
+  return text.includes("server type") && text.includes("deprecated");
 }
 
 async function withRetry(fn, { retries, delayMs, name }) {

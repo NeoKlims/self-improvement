@@ -27,7 +27,7 @@ File: `.github/workflows/ephemeral-hetzner-ci.yml`
 Stages:
 1. `provision-runner`
    - Creates firewall
-   - Creates CX11 server with cloud-init bootstrap
+   - Creates CPX11 server with cloud-init bootstrap
    - Registers ephemeral self-hosted runner
    - Waits until runner is online
 2. `tests`
@@ -58,7 +58,7 @@ Provision mode:
 - `GITHUB_TOKEN`
 - `GITHUB_REPOSITORY` (format: `owner/repo`)
 - `GITHUB_RUN_ID` (for unique naming)
-- `HETZNER_SERVER_TYPE` (default: `cx11`)
+- `HETZNER_SERVER_TYPE` (default: `cpx11`)
 - `HETZNER_LOCATION` (default: `fsn1`)
 - `HETZNER_IMAGE` (default: `ubuntu-24.04`)
 - `CLOUDFLARE_TUNNEL_TOKEN` (optional)
