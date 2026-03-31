@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       AI_BRANCH: ai/self-improve
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -29,11 +28,6 @@ jobs:
       - name: Switch to AI branch
         run: |
           git checkout -B "$AI_BRANCH"
-
-      - name: Configure git identity
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Install dependencies
         run: npm ci
@@ -54,4 +48,6 @@ jobs:
 
       - name: Push commits
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git push -u origin "$AI_BRANCH"
