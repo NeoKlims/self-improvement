@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./Contact.css";
 
 interface FormData {
@@ -23,6 +23,7 @@ const Contact: React.FC = () => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const resetTimeoutRef = useRef<number | null>(null);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -47,11 +48,19 @@ const Contact: React.FC = () => {
     setIsSubmitted(true);
 
     // Reset form after 3 seconds
-    setTimeout(() => {
+    resetTimeoutRef.current = window.setTimeout(() => {
       setIsSubmitted(false);
       setFormData(initialFormData);
     }, 3000);
   };
+
+  useEffect(() => {
+    return () => {
+      if (resetTimeoutRef.current) {
+        clearTimeout(resetTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const contactInfo = [
     {
