@@ -35,7 +35,7 @@ async function provision(ctx) {
   const registrationToken = await createRunnerRegistrationToken(ctx);
 
   log("Creating Hetzner firewall with no inbound rules");
-  const firewallId = await createFirewall(ctx, firewallName);
+  const firewallId = await createFirewall(ctx.hetznerToken, firewallName);
 
   log("Creating Hetzner server");
   const cloudInit = buildCloudInit({
