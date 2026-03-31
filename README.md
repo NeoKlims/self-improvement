@@ -105,6 +105,22 @@ Pipeline:
 4. Run project build verification
 5. Push created commits
 
+## Ephemeral Hetzner CI
+
+This repository also includes ephemeral self-hosted CI on Hetzner Cloud:
+
+- Script: `scripts/hetzner-ephemeral-ci.mjs`
+- Workflow: `.github/workflows/ephemeral-hetzner-ci.yml`
+- Setup guide: `docs/ephemeral-hetzner-ci.md`
+
+Capabilities:
+
+- Create temporary CX11 runner on demand
+- Block inbound access (no public SSH exposure)
+- Register as ephemeral GitHub self-hosted runner
+- Run tests on that runner
+- Destroy server and firewall after completion
+
 ## Observability
 
 The agent logs:
