@@ -12,6 +12,10 @@ export async function hasChanges(rootDir, relPath) {
 export async function commitFile(rootDir, relPath, logger) {
   await runGit(rootDir, ["add", "--", relPath]);
   await runGit(rootDir, [
+    "-c",
+    "user.name=github-actions[bot]",
+    "-c",
+    "user.email=41898282+github-actions[bot]@users.noreply.github.com",
     "commit",
     "-m",
     `chore(ai): improve ${fileNameFromPath(relPath)}`,
