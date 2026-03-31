@@ -9,19 +9,13 @@
 
 .hero-background {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   z-index: 1;
 }
 
 .hero-gradient {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: radial-gradient(
       circle at 20% 10%,
       rgba(133, 92, 228, 0.15) 0%,
@@ -51,10 +45,7 @@
 
 .hero-particles {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
 }
 
 .particle {
@@ -285,7 +276,7 @@
   height: 100%;
   background: var(--primary-gradient);
   border-radius: 3px;
-  animation: progressFill 2s ease-out;
+  animation: progressFill 2s ease-out forwards;
 }
 
 @keyframes progressFill {
@@ -351,10 +342,7 @@
 /* Новые фиолетовые элементы */
 .hero-shapes {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   z-index: 1;
 }
 
@@ -428,10 +416,7 @@
 
 .hero-lights {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   z-index: 1;
 }
 
@@ -481,10 +466,7 @@
 
 .hero-grid {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   z-index: 1;
   background-image: linear-gradient(
       rgba(133, 92, 228, 0.1) 1px,
