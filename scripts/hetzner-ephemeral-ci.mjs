@@ -286,7 +286,18 @@ async function createServerWithFallbackType({ ctx, serverName, firewallId, cloud
                 firewalls: [{ firewall: firewallId }],
               },
             }),
-          { retries: 3, delayMs: 4000, name: `create-server-${serverType}-${location}` },
+          {
+            retries: 3,
+            delayMs: 4000,
+            name: `create-server-${serverType}-${location}`,
+            shouldRetry: (error) => {
+              const text = String(error?.message || "").toLowerCase();
+              if (text.includes("unsupported location")) return false;
+              if (text.includes("server type") && text.includes("deprecated")) return false;
+              if (text.includes("(422)")) return false;
+              return true;
+            },
+          },
         );
       } catch (error) {
         lastError = error;
@@ -318,10 +329,13 @@ async function createServerWithFallbackType({ ctx, serverName, firewallId, cloud
 
 async function getSupportedLocationsForServerType(token, serverType) {
   try {
-    const response = await hcloudRequest(token, `/server_types/${serverType}`, {
+    const response = await hcloudRequest(token, "/server_types", {
       method: "GET",
     });
-    return unique((response.server_type?.prices || []).map((p) => p.location));
+    const item = (response.server_types || []).find(
+      (entry) => entry.name === serverType,
+    );
+    return unique((item?.prices || []).map((p) => p.location));
   } catch {
     return [];
   }
@@ -450,7 +464,7 @@ function isUnsupportedLocationError(message) {
   return String(message).toLowerCase().includes("unsupported location");
 }
 
-async function withRetry(fn, { retries, delayMs, name }) {
+async function withRetry(fn, { retries, delayMs, name, shouldRetry }) {
   let lastError;
   for (let attempt = 1; attempt <= retries; attempt += 1) {
     try {
@@ -458,6 +472,9 @@ async function withRetry(fn, { retries, delayMs, name }) {
     } catch (error) {
       lastError = error;
       log("Retryable operation failed", { name, attempt, error: error.message });
+      if (shouldRetry && !shouldRetry(error)) {
+        throw error;
+      }
       if (attempt < retries) {
         await sleep(delayMs * attempt);
       }
