@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import dotenv from "dotenv";
 
 import { loadConfig } from "./config.js";
 import { analyzeAndValidateDiff } from "./diffSafety.js";
@@ -13,6 +14,7 @@ const logger = createLogger("self-improve");
 
 async function main() {
   const rootDir = process.cwd();
+  dotenv.config({ path: path.join(rootDir, ".env") });
   const config = loadConfig(rootDir);
   logger.info("Starting self-improvement run", {
     dryRun: config.dryRun,
