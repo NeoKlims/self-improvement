@@ -59,7 +59,7 @@ Provision mode:
 - `GITHUB_REPOSITORY` (format: `owner/repo`)
 - `GITHUB_RUN_ID` (for unique naming)
 - `HETZNER_SERVER_TYPE` (default: `cpx11`)
-- `HETZNER_LOCATION` (default: `fsn1`)
+- `HETZNER_LOCATION` (default: `fsn1`, script auto-fallbacks to supported locations)
 - `HETZNER_IMAGE` (default: `ubuntu-24.04`)
 - `CLOUDFLARE_TUNNEL_TOKEN` (optional)
 

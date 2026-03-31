@@ -259,41 +259,72 @@ async function createServerWithFallbackType({ ctx, serverName, firewallId, cloud
   const candidateTypes = unique([ctx.hetznerServerType, "cpx11"]);
   let lastError;
   for (const serverType of candidateTypes) {
-    try {
-      log("Attempting server create", { serverType });
-      return await withRetry(
-        () =>
-          hcloudRequest(ctx.hetznerToken, "/servers", {
-            method: "POST",
-            body: {
-              name: serverName,
-              server_type: serverType,
-              image: ctx.hetznerImage,
-              location: ctx.hetznerLocation,
-              user_data: cloudInit,
-              labels: {
-                purpose: "ephemeral-ci",
-                repo: sanitizeLabel(ctx.githubRepository),
-                run_id: String(ctx.githubRunId),
+    const supportedLocations = await getSupportedLocationsForServerType(
+      ctx.hetznerToken,
+      serverType,
+    );
+    const candidateLocations = unique([ctx.hetznerLocation, ...supportedLocations]);
+
+    for (const location of candidateLocations) {
+      try {
+        log("Attempting server create", { serverType, location });
+        return await withRetry(
+          () =>
+            hcloudRequest(ctx.hetznerToken, "/servers", {
+              method: "POST",
+              body: {
+                name: serverName,
+                server_type: serverType,
+                image: ctx.hetznerImage,
+                location,
+                user_data: cloudInit,
+                labels: {
+                  purpose: "ephemeral-ci",
+                  repo: sanitizeLabel(ctx.githubRepository),
+                  run_id: String(ctx.githubRunId),
+                },
+                firewalls: [{ firewall: firewallId }],
               },
-              firewalls: [{ firewall: firewallId }],
-            },
-          }),
-        { retries: 3, delayMs: 4000, name: `create-server-${serverType}` },
-      );
-    } catch (error) {
-      lastError = error;
-      if (isDeprecatedServerTypeError(error.message)) {
-        log("Server type appears deprecated, trying next candidate", {
-          serverType,
-          error: error.message,
-        });
-        continue;
+            }),
+          { retries: 3, delayMs: 4000, name: `create-server-${serverType}-${location}` },
+        );
+      } catch (error) {
+        lastError = error;
+        if (isUnsupportedLocationError(error.message)) {
+          log("Location not supported for server type, trying next location", {
+            serverType,
+            location,
+            error: error.message,
+          });
+          continue;
+        }
+        if (isDeprecatedServerTypeError(error.message)) {
+          log("Server type appears deprecated, trying next candidate", {
+            serverType,
+            error: error.message,
+          });
+          break;
+        }
+        throw error;
       }
-      throw error;
+    }
+
+    if (!supportedLocations.length) {
+      log("Could not discover supported locations for server type", { serverType });
     }
   }
   throw lastError;
+}
+
+async function getSupportedLocationsForServerType(token, serverType) {
+  try {
+    const response = await hcloudRequest(token, `/server_types/${serverType}`, {
+      method: "GET",
+    });
+    return unique((response.server_type?.prices || []).map((p) => p.location));
+  } catch {
+    return [];
+  }
 }
 
 async function hcloudRequest(token, path, { method, body }) {
@@ -413,6 +444,10 @@ function unique(values) {
 function isDeprecatedServerTypeError(message) {
   const text = String(message).toLowerCase();
   return text.includes("server type") && text.includes("deprecated");
+}
+
+function isUnsupportedLocationError(message) {
+  return String(message).toLowerCase().includes("unsupported location");
 }
 
 async function withRetry(fn, { retries, delayMs, name }) {
