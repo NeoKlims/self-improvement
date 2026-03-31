@@ -32,7 +32,7 @@ jobs:
         id: provision
         env:
           HETZNER_API_TOKEN: ${{ secrets.HETZNER_API_TOKEN }}
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GH_RUNNER_ADMIN_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           HETZNER_SERVER_TYPE: cx11
