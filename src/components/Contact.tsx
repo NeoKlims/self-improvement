@@ -41,13 +41,13 @@ const Contact: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate form submission
+    // Simulate form submission delay
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     setIsSubmitting(false);
     setIsSubmitted(true);
 
-    // Reset form after 3 seconds
+    // Reset form and submission state after 3 seconds
     resetTimeoutRef.current = window.setTimeout(() => {
       setIsSubmitted(false);
       setFormData(initialFormData);
@@ -56,7 +56,7 @@ const Contact: React.FC = () => {
 
   useEffect(() => {
     return () => {
-      if (resetTimeoutRef.current) {
+      if (resetTimeoutRef.current !== null) {
         clearTimeout(resetTimeoutRef.current);
       }
     };
