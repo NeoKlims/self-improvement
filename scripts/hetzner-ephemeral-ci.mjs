@@ -35,7 +35,12 @@ async function provision(ctx) {
   const registrationToken = await createRunnerRegistrationToken(ctx);
 
   log("Creating Hetzner firewall with no inbound rules");
-  const firewallId = await createFirewall(ctx.hetznerToken, firewallName);
+  const firewallId = await createFirewall({
+    token: ctx.hetznerToken,
+    name: firewallName,
+    runId: String(ctx.githubRunId),
+    repo: ctx.githubRepository,
+  });
 
   log("Creating Hetzner server");
   const cloudInit = buildCloudInit({
@@ -96,6 +101,9 @@ async function cleanup(ctx) {
       });
     }
   }
+  if (!ctx.firewallId && ctx.githubRunId) {
+    await cleanupOrphanFirewallsByRunId(ctx);
+  }
 
   if (ctx.runnerName) {
     try {
@@ -137,6 +145,7 @@ function loadCleanupContext() {
     serverId: process.env.HCLOUD_SERVER_ID || "",
     firewallId: process.env.HCLOUD_FIREWALL_ID || "",
     runnerName: process.env.GH_RUNNER_NAME || "",
+    githubRunId: (process.env.GITHUB_RUN_ID || "").trim(),
   };
 }
 
@@ -224,10 +233,14 @@ async function listRepoRunners(ctx) {
   return data.runners || [];
 }
 
-async function createFirewall(token, name) {
+async function createFirewall({ token, name, runId, repo }) {
   const payload = {
     name,
-    labels: { purpose: "ephemeral-ci" },
+    labels: {
+      purpose: "ephemeral-ci",
+      run_id: runId,
+      repo: sanitizeLabel(repo),
+    },
     rules: [
       {
         direction: "out",
@@ -253,6 +266,39 @@ async function createFirewall(token, name) {
     body: payload,
   });
   return response.firewall.id;
+}
+
+async function cleanupOrphanFirewallsByRunId(ctx) {
+  const labelSelector = encodeURIComponent(
+    `purpose=ephemeral-ci,run_id=${ctx.githubRunId},repo=${sanitizeLabel(ctx.githubRepository)}`,
+  );
+  try {
+    const list = await hcloudRequest(
+      ctx.hetznerToken,
+      `/firewalls?label_selector=${labelSelector}`,
+      { method: "GET" },
+    );
+    const firewalls = list.firewalls || [];
+    for (const fw of firewalls) {
+      try {
+        await hcloudRequest(ctx.hetznerToken, `/firewalls/${fw.id}`, {
+          method: "DELETE",
+        });
+        log("Orphan firewall deleted by labels", { firewallId: fw.id, runId: ctx.githubRunId });
+      } catch (error) {
+        log("Orphan firewall cleanup warning", {
+          firewallId: fw.id,
+          runId: ctx.githubRunId,
+          error: error.message,
+        });
+      }
+    }
+  } catch (error) {
+    log("Orphan firewall lookup warning", {
+      runId: ctx.githubRunId,
+      error: error.message,
+    });
+  }
 }
 
 async function createServerWithFallbackType({ ctx, serverName, firewallId, cloudInit }) {

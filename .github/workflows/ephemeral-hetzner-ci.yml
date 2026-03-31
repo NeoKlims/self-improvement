@@ -124,6 +124,7 @@ jobs:
           HETZNER_API_TOKEN: ${{ secrets.HETZNER_API_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GH_RUNNER_ADMIN_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
           HCLOUD_SERVER_ID: ${{ needs.provision-runner.outputs.server_id }}
           HCLOUD_FIREWALL_ID: ${{ needs.provision-runner.outputs.firewall_id }}
           GH_RUNNER_NAME: ${{ needs.provision-runner.outputs.runner_name }}
