@@ -90,9 +90,7 @@ async function cleanup(ctx) {
 
   if (ctx.firewallId) {
     try {
-      await hcloudRequest(ctx.hetznerToken, `/firewalls/${ctx.firewallId}`, {
-        method: "DELETE",
-      });
+      await deleteFirewallWithRetry(ctx.hetznerToken, ctx.firewallId);
       log("Firewall deleted", { firewallId: ctx.firewallId });
     } catch (error) {
       log("Firewall cleanup warning", {
@@ -281,9 +279,7 @@ async function cleanupOrphanFirewallsByRunId(ctx) {
     const firewalls = list.firewalls || [];
     for (const fw of firewalls) {
       try {
-        await hcloudRequest(ctx.hetznerToken, `/firewalls/${fw.id}`, {
-          method: "DELETE",
-        });
+        await deleteFirewallWithRetry(ctx.hetznerToken, fw.id);
         log("Orphan firewall deleted by labels", { firewallId: fw.id, runId: ctx.githubRunId });
       } catch (error) {
         log("Orphan firewall cleanup warning", {
@@ -298,6 +294,38 @@ async function cleanupOrphanFirewallsByRunId(ctx) {
       runId: ctx.githubRunId,
       error: error.message,
     });
+  }
+}
+
+async function deleteFirewallWithRetry(token, firewallId) {
+  const maxAttempts = 12;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await hcloudRequest(token, `/firewalls/${firewallId}`, { method: "DELETE" });
+      return;
+    } catch (error) {
+      if (!isFirewallInUseError(error.message)) throw error;
+      const waitMs = Math.min(10000, attempt * 1000);
+      await waitUntilFirewallDetached(token, firewallId, waitMs);
+      if (attempt === maxAttempts) throw error;
+    }
+  }
+}
+
+async function waitUntilFirewallDetached(token, firewallId, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const details = await hcloudRequest(token, `/firewalls/${firewallId}`, {
+        method: "GET",
+      });
+      const appliedTo = details.firewall?.applied_to || [];
+      if (appliedTo.length === 0) return;
+    } catch {
+      // If firewall is already gone, we can stop waiting.
+      return;
+    }
+    await sleep(1000);
   }
 }
 
@@ -508,6 +536,11 @@ function isDeprecatedServerTypeError(message) {
 
 function isUnsupportedLocationError(message) {
   return String(message).toLowerCase().includes("unsupported location");
+}
+
+function isFirewallInUseError(message) {
+  const text = String(message).toLowerCase();
+  return text.includes("resource_in_use") || text.includes("still in use");
 }
 
 async function withRetry(fn, { retries, delayMs, name, shouldRetry }) {
