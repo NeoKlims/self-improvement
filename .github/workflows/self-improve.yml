@@ -27,7 +27,17 @@ jobs:
 
       - name: Switch to AI branch
         run: |
-          git checkout -B "$AI_BRANCH"
+          git fetch origin "$AI_BRANCH" || true
+          if git rev-parse --verify --quiet "origin/$AI_BRANCH"; then
+            git checkout -B "$AI_BRANCH" "origin/$AI_BRANCH"
+          else
+            git checkout -b "$AI_BRANCH"
+          fi
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Install dependencies
         run: npm ci
@@ -48,6 +58,4 @@ jobs:
 
       - name: Push commits
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git push -u origin "$AI_BRANCH"
+          git push origin "$AI_BRANCH"
