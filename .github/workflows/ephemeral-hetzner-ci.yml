@@ -1,0 +1,131 @@
+name: Ephemeral Hetzner CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  provision-runner:
+    runs-on: ubuntu-latest
+    outputs:
+      server_id: ${{ steps.provision.outputs.server_id }}
+      firewall_id: ${{ steps.provision.outputs.firewall_id }}
+      runner_label: ${{ steps.provision.outputs.runner_label }}
+      runner_name: ${{ steps.provision.outputs.runner_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+
+      - name: Debug auth inputs
+        env:
+          HETZNER_API_TOKEN: ${{ secrets.HETZNER_API_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_RUNNER_ADMIN_TOKEN }}
+        run: |
+          echo "hetzner token length: ${#HETZNER_API_TOKEN}"
+          echo "github token length: ${#GITHUB_TOKEN}"
+          echo -n "$HETZNER_API_TOKEN" | sha256sum | awk '{print "hetzner token sha256: "$1}'
+          code=$(curl -s -o /tmp/hcloud_probe.json -w "%{http_code}" \
+            -H "Authorization: Bearer $HETZNER_API_TOKEN" \
+            "https://api.hetzner.cloud/v1/servers?per_page=1")
+          echo "hetzner /servers status: $code"
+          if [ "$code" != "200" ]; then
+            cat /tmp/hcloud_probe.json
+            exit 1
+          fi
+          fw_name="ci-fw-probe-${GITHUB_RUN_ID}"
+          fw_code=$(curl -s -o /tmp/hcloud_fw_probe.json -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer $HETZNER_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"name\":\"$fw_name\",\"rules\":[]}" \
+            "https://api.hetzner.cloud/v1/firewalls")
+          echo "hetzner /firewalls POST status: $fw_code"
+          if [ "$fw_code" != "201" ]; then
+            cat /tmp/hcloud_fw_probe.json
+            exit 1
+          fi
+          fw_id=$(jq -r '.firewall.id // empty' /tmp/hcloud_fw_probe.json)
+          if [ -z "$fw_id" ]; then
+            echo "failed to extract firewall id from probe response"
+            cat /tmp/hcloud_fw_probe.json
+            exit 1
+          fi
+          del_code=$(curl -s -o /tmp/hcloud_fw_delete.json -w "%{http_code}" \
+            -X DELETE \
+            -H "Authorization: Bearer $HETZNER_API_TOKEN" \
+            "https://api.hetzner.cloud/v1/firewalls/$fw_id")
+          echo "hetzner /firewalls DELETE status: $del_code"
+          if [ "$del_code" != "200" ] && [ "$del_code" != "204" ]; then
+            cat /tmp/hcloud_fw_delete.json
+            exit 1
+          fi
+
+      - name: Provision ephemeral Hetzner runner
+        id: provision
+        env:
+          HETZNER_API_TOKEN: ${{ secrets.HETZNER_API_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_RUNNER_ADMIN_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          HETZNER_SERVER_TYPE: cpx11
+          HETZNER_LOCATION: fsn1
+          HETZNER_IMAGE: ubuntu-24.04
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+        run: node scripts/hetzner-ephemeral-ci.mjs provision
+
+  tests:
+    needs: provision-runner
+    runs-on:
+      - self-hosted
+      - ${{ needs.provision-runner.outputs.runner_label }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+  cleanup-runner:
+    if: always()
+    needs:
+      - provision-runner
+      - tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Cleanup Hetzner resources
+        env:
+          HETZNER_API_TOKEN: ${{ secrets.HETZNER_API_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_RUNNER_ADMIN_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          HCLOUD_SERVER_ID: ${{ needs.provision-runner.outputs.server_id }}
+          HCLOUD_FIREWALL_ID: ${{ needs.provision-runner.outputs.firewall_id }}
+          GH_RUNNER_NAME: ${{ needs.provision-runner.outputs.runner_name }}
+        run: node scripts/hetzner-ephemeral-ci.mjs cleanup
