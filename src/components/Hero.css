@@ -55,6 +55,7 @@
   background: var(--primary-color);
   border-radius: 50%;
   animation: float 6s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 .particle:nth-child(1) {
@@ -186,6 +187,7 @@
   max-width: 400px;
   width: 100%;
   animation: cardFloat 3s ease-in-out infinite;
+  will-change: transform;
 }
 
 @keyframes cardFloat {
