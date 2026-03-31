@@ -42,17 +42,20 @@ const Contact: React.FC = () => {
     if (isSubmitting) return; // Prevent multiple submissions
     setIsSubmitting(true);
 
-    // Simulate form submission delay
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      // Simulate form submission delay
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-
-    // Reset form and submission state after 3 seconds
-    resetTimeoutRef.current = window.setTimeout(() => {
-      setIsSubmitted(false);
+      setIsSubmitted(true);
       setFormData(initialFormData);
-    }, 3000);
+
+      // Reset submission state after 3 seconds
+      resetTimeoutRef.current = window.setTimeout(() => {
+        setIsSubmitted(false);
+      }, 3000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   useEffect(() => {
