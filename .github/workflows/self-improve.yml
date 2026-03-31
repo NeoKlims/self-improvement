@@ -1,0 +1,47 @@
+name: Self Improve Repository
+
+on:
+  schedule:
+    - cron: "17 */2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  self-improve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run self-improvement agent
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+          DRY_RUN: "false"
+          MAX_FILES_PER_RUN: "3"
+          MAX_FILE_SIZE_BYTES: "50000"
+          MAX_TOTAL_CHANGED_LINES: "120"
+          AUTO_PUSH: "false"
+        run: npm run self-improve
+
+      - name: Verify build
+        run: npm run build
+
+      - name: Push commits
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git push
