@@ -7,9 +7,12 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "self-improve": "node agent/index.js",
+    "self-improve:dry": "node agent/index.js --dry-run"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

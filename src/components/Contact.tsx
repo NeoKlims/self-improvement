@@ -1,16 +1,26 @@
 import React, { useState } from "react";
 import "./Contact.css";
 
-const Contact: React.FC = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    company: "",
-    phone: "",
-    service: "",
-    message: "",
-  });
+interface FormData {
+  name: string;
+  email: string;
+  company: string;
+  phone: string;
+  service: string;
+  message: string;
+}
 
+const initialFormData: FormData = {
+  name: "",
+  email: "",
+  company: "",
+  phone: "",
+  service: "",
+  message: "",
+};
+
+const Contact: React.FC = () => {
+  const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -39,14 +49,7 @@ const Contact: React.FC = () => {
     // Reset form after 3 seconds
     setTimeout(() => {
       setIsSubmitted(false);
-      setFormData({
-        name: "",
-        email: "",
-        company: "",
-        phone: "",
-        service: "",
-        message: "",
-      });
+      setFormData(initialFormData);
     }, 3000);
   };
 
@@ -110,7 +113,9 @@ const Contact: React.FC = () => {
               {contactInfo.map((info, index) => (
                 <div key={index} className="contact-method">
                   <div className="method-icon">
-                    <span className="icon-emoji">{info.icon}</span>
+                    <span className="icon-emoji" aria-label={info.title}>
+                      {info.icon}
+                    </span>
                   </div>
                   <div className="method-content">
                     <h4>{info.title}</h4>
@@ -138,15 +143,17 @@ const Contact: React.FC = () => {
               </div>
 
               {isSubmitted ? (
-                <div className="form-success">
-                  <div className="success-icon">✓</div>
+                <div className="form-success" role="alert" aria-live="polite">
+                  <div className="success-icon" aria-hidden="true">
+                    ✓
+                  </div>
                   <h4>Заявка отправлена!</h4>
                   <p>
                     Спасибо за обращение. Мы свяжемся с вами в течение часа.
                   </p>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="contact-form">
+                <form onSubmit={handleSubmit} className="contact-form" noValidate>
                   <div className="form-row">
                     <div className="form-group">
                       <label htmlFor="name">Имя *</label>
@@ -158,6 +165,7 @@ const Contact: React.FC = () => {
                         onChange={handleInputChange}
                         required
                         placeholder="Ваше имя"
+                        autoComplete="name"
                       />
                     </div>
                     <div className="form-group">
@@ -170,6 +178,7 @@ const Contact: React.FC = () => {
                         onChange={handleInputChange}
                         required
                         placeholder="your@email.com"
+                        autoComplete="email"
                       />
                     </div>
                   </div>
@@ -184,6 +193,7 @@ const Contact: React.FC = () => {
                         value={formData.company}
                         onChange={handleInputChange}
                         placeholder="Название компании"
+                        autoComplete="organization"
                       />
                     </div>
                     <div className="form-group">
@@ -195,6 +205,7 @@ const Contact: React.FC = () => {
                         value={formData.phone}
                         onChange={handleInputChange}
                         placeholder="+7 (999) 123-45-67"
+                        autoComplete="tel"
                       />
                     </div>
                   </div>
@@ -233,6 +244,7 @@ const Contact: React.FC = () => {
                     type="submit"
                     className="btn btn-primary form-submit"
                     disabled={isSubmitting}
+                    aria-busy={isSubmitting}
                   >
                     {isSubmitting ? "Отправляем..." : "Отправить заявку"}
                   </button>
