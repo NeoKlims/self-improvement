@@ -1,0 +1,229 @@
+.about {
+  background: var(--background-color);
+  position: relative;
+}
+
+.about::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(133, 92, 228, 0.03) 0%,
+    transparent 50%,
+    rgba(123, 83, 243, 0.03) 100%
+  );
+  pointer-events: none;
+}
+
+.about-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: start;
+}
+
+.about-features {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.feature {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.feature-icon {
+  width: 60px;
+  height: 60px;
+  background: var(--primary-gradient);
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 8px 20px rgba(133, 92, 228, 0.3);
+}
+
+.feature-content h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
+}
+
+.feature-content p {
+  color: rgba(231, 231, 231, 0.8);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.about-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.about-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+  transition: all var(--transition-normal);
+}
+
+.about-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--primary-color);
+  box-shadow: 0 20px 40px rgba(133, 92, 228, 0.1);
+}
+
+.card-header h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 1rem;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.card-content p {
+  color: rgba(231, 231, 231, 0.8);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.mission-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.mission-stat {
+  text-align: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mission-stat .stat-number {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+
+.mission-stat .stat-label {
+  display: block;
+  font-size: 0.8rem;
+  color: rgba(231, 231, 231, 0.7);
+  margin-top: 0.5rem;
+}
+
+.values {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  padding: 1.5rem;
+}
+
+.values h4 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 1rem;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.values ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.values li {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-bottom: 0.8rem;
+  color: rgba(231, 231, 231, 0.8);
+  line-height: 1.5;
+}
+
+.values li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--primary-color);
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .about-content {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  .about-visual {
+    order: -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .about-features {
+    gap: 1.5rem;
+  }
+
+  .feature {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .feature-icon {
+    align-self: center;
+  }
+
+  .mission-stats {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+
+  .about-card {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .feature-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .about-card {
+    padding: 1rem;
+  }
+
+  .values {
+    padding: 1rem;
+  }
+}
