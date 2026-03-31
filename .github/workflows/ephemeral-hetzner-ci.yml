@@ -2,7 +2,6 @@ name: Ephemeral Hetzner CI
 
 on:
   workflow_dispatch:
-  pull_request:
   push:
     branches:
       - main
@@ -27,6 +26,22 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "20"
+
+      - name: Debug auth inputs
+        env:
+          HETZNER_API_TOKEN: ${{ secrets.HETZNER_API_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_RUNNER_ADMIN_TOKEN }}
+        run: |
+          echo "hetzner token length: ${#HETZNER_API_TOKEN}"
+          echo "github token length: ${#GITHUB_TOKEN}"
+          code=$(curl -s -o /tmp/hcloud_probe.json -w "%{http_code}" \
+            -H "Authorization: Bearer $HETZNER_API_TOKEN" \
+            "https://api.hetzner.cloud/v1/servers?per_page=1")
+          echo "hetzner /servers status: $code"
+          if [ "$code" != "200" ]; then
+            cat /tmp/hcloud_probe.json
+            exit 1
+          fi
 
       - name: Provision ephemeral Hetzner runner
         id: provision
@@ -79,7 +94,7 @@ jobs:
       - name: Cleanup Hetzner resources
         env:
           HETZNER_API_TOKEN: ${{ secrets.HETZNER_API_TOKEN }}
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GH_RUNNER_ADMIN_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           HCLOUD_SERVER_ID: ${{ needs.provision-runner.outputs.server_id }}
           HCLOUD_FIREWALL_ID: ${{ needs.provision-runner.outputs.firewall_id }}

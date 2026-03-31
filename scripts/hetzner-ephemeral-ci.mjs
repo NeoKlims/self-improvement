@@ -14,6 +14,7 @@ async function main() {
 
   if (command === "provision") {
     const ctx = loadContext();
+    await runPreflightChecks(ctx);
     const state = await provision(ctx);
     printOutputs(state);
     return;
@@ -129,14 +130,14 @@ function loadContext() {
   assertRequired(required);
 
   return {
-    hetznerToken: process.env.HETZNER_API_TOKEN,
-    githubToken: process.env.GITHUB_TOKEN,
-    githubRepository: process.env.GITHUB_REPOSITORY,
-    githubRunId: process.env.GITHUB_RUN_ID,
-    hetznerServerType: process.env.HETZNER_SERVER_TYPE || "cx11",
-    hetznerImage: process.env.HETZNER_IMAGE || "ubuntu-24.04",
-    hetznerLocation: process.env.HETZNER_LOCATION || "fsn1",
-    cloudflareTunnelToken: process.env.CLOUDFLARE_TUNNEL_TOKEN || "",
+    hetznerToken: process.env.HETZNER_API_TOKEN.trim(),
+    githubToken: process.env.GITHUB_TOKEN.trim(),
+    githubRepository: process.env.GITHUB_REPOSITORY.trim(),
+    githubRunId: process.env.GITHUB_RUN_ID.trim(),
+    hetznerServerType: (process.env.HETZNER_SERVER_TYPE || "cx11").trim(),
+    hetznerImage: (process.env.HETZNER_IMAGE || "ubuntu-24.04").trim(),
+    hetznerLocation: (process.env.HETZNER_LOCATION || "fsn1").trim(),
+    cloudflareTunnelToken: (process.env.CLOUDFLARE_TUNNEL_TOKEN || "").trim(),
   };
 }
 
@@ -144,13 +145,31 @@ function loadCleanupContext() {
   const required = ["HETZNER_API_TOKEN", "GITHUB_TOKEN", "GITHUB_REPOSITORY"];
   assertRequired(required);
   return {
-    hetznerToken: process.env.HETZNER_API_TOKEN,
-    githubToken: process.env.GITHUB_TOKEN,
-    githubRepository: process.env.GITHUB_REPOSITORY,
+    hetznerToken: process.env.HETZNER_API_TOKEN.trim(),
+    githubToken: process.env.GITHUB_TOKEN.trim(),
+    githubRepository: process.env.GITHUB_REPOSITORY.trim(),
     serverId: process.env.HCLOUD_SERVER_ID || "",
     firewallId: process.env.HCLOUD_FIREWALL_ID || "",
     runnerName: process.env.GH_RUNNER_NAME || "",
   };
+}
+
+async function runPreflightChecks(ctx) {
+  log("Preflight: validating token shapes", {
+    hetznerTokenLength: ctx.hetznerToken.length,
+    githubTokenLength: ctx.githubToken.length,
+    repository: ctx.githubRepository,
+  });
+
+  const hcloud = await hcloudRequest(ctx.hetznerToken, "/servers?per_page=1", {
+    method: "GET",
+  });
+  const count = Array.isArray(hcloud.servers) ? hcloud.servers.length : 0;
+  log("Preflight: Hetzner read access OK", { sampleServerCount: count });
+
+  const [owner, repo] = ctx.githubRepository.split("/");
+  await githubRequest(ctx.githubToken, `/repos/${owner}/${repo}`, { method: "GET" });
+  log("Preflight: GitHub repo access OK");
 }
 
 function assertRequired(names) {
