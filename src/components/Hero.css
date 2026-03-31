@@ -344,6 +344,7 @@
   position: absolute;
   inset: 0;
   z-index: 1;
+  pointer-events: none;
 }
 
 .shape {
@@ -352,6 +353,7 @@
   background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
   opacity: 0.1;
   animation: shapeFloat 8s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 .shape-1 {
@@ -418,6 +420,7 @@
   position: absolute;
   inset: 0;
   z-index: 1;
+  pointer-events: none;
 }
 
 .light {
@@ -426,6 +429,7 @@
   background: radial-gradient(circle, var(--primary-color), transparent);
   opacity: 0.3;
   animation: lightPulse 4s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 .light-1 {
@@ -476,6 +480,7 @@
   background-size: 50px 50px;
   opacity: 0.3;
   animation: gridMove 20s linear infinite;
+  pointer-events: none;
 }
 
 @keyframes gridMove {
