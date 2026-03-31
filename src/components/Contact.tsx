@@ -39,6 +39,7 @@ const Contact: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return; // Prevent multiple submissions
     setIsSubmitting(true);
 
     // Simulate form submission delay
