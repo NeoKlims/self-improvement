@@ -34,12 +34,40 @@ jobs:
         run: |
           echo "hetzner token length: ${#HETZNER_API_TOKEN}"
           echo "github token length: ${#GITHUB_TOKEN}"
+          echo -n "$HETZNER_API_TOKEN" | sha256sum | awk '{print "hetzner token sha256: "$1}'
           code=$(curl -s -o /tmp/hcloud_probe.json -w "%{http_code}" \
             -H "Authorization: Bearer $HETZNER_API_TOKEN" \
             "https://api.hetzner.cloud/v1/servers?per_page=1")
           echo "hetzner /servers status: $code"
           if [ "$code" != "200" ]; then
             cat /tmp/hcloud_probe.json
+            exit 1
+          fi
+          fw_name="ci-fw-probe-${GITHUB_RUN_ID}"
+          fw_code=$(curl -s -o /tmp/hcloud_fw_probe.json -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer $HETZNER_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"name\":\"$fw_name\",\"rules\":[]}" \
+            "https://api.hetzner.cloud/v1/firewalls")
+          echo "hetzner /firewalls POST status: $fw_code"
+          if [ "$fw_code" != "201" ]; then
+            cat /tmp/hcloud_fw_probe.json
+            exit 1
+          fi
+          fw_id=$(jq -r '.firewall.id // empty' /tmp/hcloud_fw_probe.json)
+          if [ -z "$fw_id" ]; then
+            echo "failed to extract firewall id from probe response"
+            cat /tmp/hcloud_fw_probe.json
+            exit 1
+          fi
+          del_code=$(curl -s -o /tmp/hcloud_fw_delete.json -w "%{http_code}" \
+            -X DELETE \
+            -H "Authorization: Bearer $HETZNER_API_TOKEN" \
+            "https://api.hetzner.cloud/v1/firewalls/$fw_id")
+          echo "hetzner /firewalls DELETE status: $del_code"
+          if [ "$del_code" != "200" ] && [ "$del_code" != "204" ]; then
+            cat /tmp/hcloud_fw_delete.json
             exit 1
           fi
 
