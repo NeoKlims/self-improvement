@@ -56,6 +56,16 @@ const Testimonials: React.FC = () => {
     );
   };
 
+  const {
+    avatar,
+    name,
+    position,
+    company,
+    rating,
+    text,
+    results,
+  } = testimonials[currentTestimonial];
+
   return (
     <section id="testimonials" className="testimonials">
       <div className="container">
@@ -70,44 +80,34 @@ const Testimonials: React.FC = () => {
           <div className="testimonial-card animate-fade-in-up">
             <div className="testimonial-header">
               <div className="testimonial-avatar">
-                <span className="avatar-emoji">
-                  {testimonials[currentTestimonial].avatar}
-                </span>
+                <span className="avatar-emoji">{avatar}</span>
               </div>
               <div className="testimonial-info">
-                <h3>{testimonials[currentTestimonial].name}</h3>
-                <p className="position">
-                  {testimonials[currentTestimonial].position}
-                </p>
-                <p className="company">
-                  {testimonials[currentTestimonial].company}
-                </p>
+                <h3>{name}</h3>
+                <p className="position">{position}</p>
+                <p className="company">{company}</p>
                 <div className="rating">
-                  {[...Array(testimonials[currentTestimonial].rating)].map(
-                    (_, i) => (
-                      <span key={i} className="star">
-                        ⭐
-                      </span>
-                    )
-                  )}
+                  {[...Array(rating)].map((_, i) => (
+                    <span key={i} className="star">
+                      ⭐
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
 
             <div className="testimonial-content">
-              <blockquote>"{testimonials[currentTestimonial].text}"</blockquote>
+              <blockquote>"{text}"</blockquote>
 
               <div className="testimonial-results">
                 <h4>Достигнутые результаты:</h4>
                 <div className="results-grid">
-                  {testimonials[currentTestimonial].results.map(
-                    (result, index) => (
-                      <div key={index} className="result-item">
-                        <span className="result-icon">✓</span>
-                        <span className="result-text">{result}</span>
-                      </div>
-                    )
-                  )}
+                  {results.map((result, index) => (
+                    <div key={index} className="result-item">
+                      <span className="result-icon">✓</span>
+                      <span className="result-text">{result}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -134,9 +134,7 @@ const Testimonials: React.FC = () => {
               {testimonials.map((_, index) => (
                 <button
                   key={index}
-                  className={`dot ${
-                    index === currentTestimonial ? "active" : ""
-                  }`}
+                  className={`dot ${index === currentTestimonial ? "active" : ""}`}
                   onClick={() => setCurrentTestimonial(index)}
                   aria-label={`Go to testimonial ${index + 1}`}
                 />
