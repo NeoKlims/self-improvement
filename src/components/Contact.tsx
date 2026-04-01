@@ -126,7 +126,7 @@ const Contact: React.FC = () => {
               {contactInfo.map((info, index) => (
                 <div key={index} className="contact-method">
                   <div className="method-icon">
-                    <span className="icon-emoji" aria-label={info.title}>
+                    <span className="icon-emoji" aria-label={info.title} role="img">
                       {info.icon}
                     </span>
                   </div>
